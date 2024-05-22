@@ -11,7 +11,10 @@ target_docs = []
 input_tokens = set()
 target_tokens = set()
 
-for line in pairs[:15]:
+# Ensure there are enough pairs
+num_pairs = min(15, len(pairs))
+
+for line in pairs[:num_pairs]:
   # Input and target sentences are separated by tabs
   input_doc, target_doc = line[0], line[1]
   input_doc = re.sub(r'human (\d): ','',input_doc)
@@ -27,14 +30,8 @@ for line in pairs[:15]:
   
   # Now we split up each sentence into words
   # and add each unique word to our vocabulary set
-  for token in re.findall(r"[\w']+|[^\s\w]", input_doc):
-    # Add your code here:
-    if token not in input_tokens:
-      input_tokens.add(token)
-  for token in target_doc.split():
-    # And here:
-    if token not in target_tokens:
-      target_tokens.add(token)
+  input_tokens.update(re.findall(r"[\w']+|[^\s\w]", input_doc))
+  target_tokens.update(target_doc.split())
 
 input_tokens = sorted(list(input_tokens))
 target_tokens = sorted(list(target_tokens))
@@ -71,12 +68,12 @@ for line, (input_doc, target_doc) in enumerate(zip(input_docs, target_docs)):
   for timestep, token in enumerate(re.findall(r"[\w']+|[^\s\w]", input_doc)):
     # Assign 1. for the current line, timestep, & word
     # in encoder_input_data:
-    if token in input_features_dict:  # Handling unknown tokens
+    if token in input_features_dict:  
       encoder_input_data[line, timestep, input_features_dict[token]] = 1.
     # add in conditional for handling unknown tokens (when token is not in input features dict)
 
   for timestep, token in enumerate(target_doc.split()):
-     if token in target_features_dict:  # Handling unknown tokens
+     if token in target_features_dict:  
       decoder_input_data[line, timestep, target_features_dict[token]] = 1.
       if timestep > 0:
 
