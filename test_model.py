@@ -2,8 +2,8 @@ from preprocessing import input_features_dict, target_features_dict, reverse_inp
 from training_model import decoder_inputs, decoder_lstm, decoder_dense, encoder_input_data, num_decoder_tokens, num_encoder_tokens
 
 from tensorflow import keras
-from keras.layers import Input, LSTM, Dense
-from keras.models import Model, load_model
+from tensorflow.keras.layers import Input, LSTM, Dense, Masking
+from tensorflow.keras.models import Model, load_model
 import numpy as np
 import re
 
@@ -11,16 +11,18 @@ import re
 training_model = load_model('training_model.h5')
 ###### because we're working with a saved model
 encoder_inputs = training_model.input[0]
+encoder_mask = Masking(mask_value=0)(encoder_inputs)  # Adding Masking
 encoder_outputs, state_h_enc, state_c_enc = training_model.layers[2].output
 encoder_states = [state_h_enc, state_c_enc]
 ######
-encoder_model = Model(encoder_inputs, encoder_states)
+encoder_model = Model(encoder_mask, encoder_states)
 
 latent_dim = 256
 decoder_state_input_hidden = Input(shape=(latent_dim,))
 decoder_state_input_cell = Input(shape=(latent_dim,))
 decoder_states_inputs = [decoder_state_input_hidden, decoder_state_input_cell]
-decoder_outputs, state_hidden, state_cell = decoder_lstm(decoder_inputs, initial_state=decoder_states_inputs)
+decoder_mask = Masking(mask_value=0)(decoder_inputs)
+decoder_outputs, state_hidden, state_cell = decoder_lstm(decoder_mask, initial_state=decoder_states_inputs)
 decoder_states = [state_hidden, state_cell]
 decoder_outputs = decoder_dense(decoder_outputs)
 decoder_model = Model([decoder_inputs] + decoder_states_inputs, [decoder_outputs] + decoder_states)
@@ -32,7 +34,10 @@ def decode_sequence(test_input):
   # Generate empty target sequence of length 1.
   target_seq = np.zeros((1, 1, num_decoder_tokens))
   # Populate the first token of target sequence with the start token.
-  target_seq[0, 0, target_features_dict['<START>']] = 1.
+  if '<START>' in target_features_dict:
+    target_seq[0, 0, target_features_dict['<START>']] = 1.
+  else:
+    raise KeyError("'<START>' token not found in target_features_dict")
 
   # Sampling loop for a batch of sequences
   # (to simplify, here we assume a batch of size 1).
