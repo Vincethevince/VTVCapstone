@@ -1,4 +1,5 @@
 data_path = "human_chat.txt"
+data_path = "dialogs.txt"
 
 # Defining lines as a list of each line
 try:
@@ -14,5 +15,7 @@ if len(lines) < 2:
     pairs = []
 else:
   # group lines by pairs
-  pairs = [(lines[i], lines[i+1])  for i in range(len(lines)-1) if "human 1: hi" not in lines[i+1]]
+  #pairs = [(lines[i], lines[i+1])  for i in range(len(lines)-1) if "human 1: hi" not in lines[i+1]]
+  pairs = [[text for text in line.strip().split("\t")] for line in lines]
+  print(pairs)
       
